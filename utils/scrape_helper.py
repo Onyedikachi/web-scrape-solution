@@ -14,6 +14,8 @@ from nltk.tokenize import word_tokenize
 nlp = spacy.load("en_core_web_sm")
 
 extracted_info = []
+excluded_sites = ["twitter.com", "instagram.com", "facebook.com", "linkedin.com"]
+
 
 async def scrape_site(url, file_url):
     try:
