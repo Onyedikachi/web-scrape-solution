@@ -9,6 +9,12 @@ from urllib.parse import urlparse
 from pathlib import Path
 from nltk.tokenize import word_tokenize
 
+from utils import rebel_fastcoref_helper
+
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+
+
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -28,6 +34,11 @@ async def scrape_site(url, file_url):
         soup = BeautifulSoup(page.content, "html.parser")
         extracted_text = soup.get_text()
 
+        future = None
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(rebel_fastcoref_helper.deep_search, input_text=extracted_text)
+
+        print(future.result())
         # Save extracted text to a text file
         text_file_path = file_url / f"{get_domain_from_url(url)}"
 
