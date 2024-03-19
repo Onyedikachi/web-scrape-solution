@@ -13,8 +13,8 @@ from utils import rebel_fastcoref_helper
 
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-
-
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -25,26 +25,40 @@ excluded_sites = ["twitter.com", "instagram.com", "facebook.com", "linkedin.com"
 
 async def scrape_site(url, file_url):
     try:
-        page = requests.get(url)
+        # page = requests.get(url)
 
-        # Use asyncio.sleep to introduce a delay
-        await asyncio.sleep(5)
+        # # Use asyncio.sleep to introduce a delay
+        # await asyncio.sleep(5)
 
         # Parse the HTML content using BeautifulSoup)
-        soup = BeautifulSoup(page.content, "html.parser")
-        extracted_text = soup.get_text()
-
-        future = None
+        # soup = BeautifulSoup(page.content, "html.parser")
+        # extracted_text = soup.get_text()
+        
+        # configure driver options
+      
         with ThreadPoolExecutor() as executor:
+            options = Options()
+            options.add_argument("--headless=new")
+
+            # options.add_experimental_option("excludeSwitches",["ignore-certificate-errors"])
+            # options.add_argument('--disable-gpu')
+            # options.add_argument('--headless')
+            # chrome_driver_path = "C:\Python27\Scripts\chromedriver.exe"
+            dr = webdriver.Chrome(options=options)
+            
+            dr.get(url)
+
+            soup = BeautifulSoup(dr.page_source,"lxml")
+            extracted_text = soup.get_text()
+
+            text_file_path = file_url / f"{get_domain_from_url(url)}"
+
+            with open(text_file_path, "w", encoding="utf-8") as file:
+                file.write(extracted_text)
+
+            future = None
             future = executor.submit(rebel_fastcoref_helper.deep_search, input_text=extracted_text)
-
-        print(future.result())
-        # Save extracted text to a text file
-        text_file_path = file_url / f"{get_domain_from_url(url)}"
-
-        with open(text_file_path, "w", encoding="utf-8") as file:
-            file.write(extracted_text)
-
+            print(future.result())
     except Exception as error:
         print("Error fetching website:", error)
 def get_domain_from_url(url):
