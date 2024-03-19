@@ -19,3 +19,7 @@ nltk==3.8.1
 certifi==2024.2.2
 asyncio
 lxml
+
+fastapi
+uvicorn[standard]
+endpoints

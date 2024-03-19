@@ -12,8 +12,24 @@ import tracemalloc
 
 tracemalloc.start()
 
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+import endpoints
 
-app = Flask(__name__)
+
+# app = Flask(__name__)
+app = FastAPI()
+# app.include_router(endpoints.read_router)
+#cors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 port = 3157
  
 apiKey = "AIzaSyBogmROW5Z82EwUwL_SU7Etw6HMWjHCZvo"
@@ -33,12 +49,12 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 import asyncio
-@app.route("/")
+@app.get("/")
 def home():
     return "Hello, Flask!"
-@app.route("/api/v1/biodata", methods=["GET"])
-async def biodata():
-    search_item = request.args.get('searchItem')
+@app.get("/api/v1/biodata")
+async def biodata(request: Request):
+    search_item = request.query_params.get('searchItem')
 
     if not search_item:
         return jsonify(error="Missing required parameter: searchItem"), 400
@@ -73,20 +89,18 @@ async def biodata():
  
         # Return the search results
         await scrape_helper.main(searchItem=search_item)
-        return jsonify(status=200, message="Success", data=search_results), 200
- 
+        return JSONResponse(status_code=200, content=search_results)
+
     except requests.RequestException as e:
 
         print(f"Error making API request: {e}")
-
-        return jsonify(error="Internal Server Error"), 500
+        return JSONResponse(status_code=500, content="Internal Server Error")
  
-@app.route("/api/v1/light-search")
-def get_query_param():
+@app.get("/api/v1/light-search")
+def get_query_param(request: Request):
     try:
         # Get the 'name' query parameter from the request
-        name = request.args.get('name')
-
+        name = request.query_params.get('name')
         # Check if 'name' is present
         if name is None:
             # Return an error message if 'name' is not present
@@ -144,26 +158,26 @@ def get_query_param():
 
             # Remove duplicates from search_results
             search_results = asyncio.run(scrape_helper.remove_duplicates(search_results))
-            return jsonify(search_results)
-
-        print(f"Error: {response.status_code}")
-        print(response.text)
-        return jsonify({'error': 'Internal server error.'}), 500
-
+            return JSONResponse(status_code=200, content=search_results)
+        
     except Exception as e:
         print(f"Error: {str(e)}")
-        return jsonify({'error': 'Internal server error.'}), 500
+        return JSONResponse(status_code=500, content="Internal Server Error")
 
 
-@app.route("/api/v1/search-results", methods=["GET"])
-def search_results():
-        name = request.args.get('name')
+
+@app.get("/api/v1/search-results")
+def search_results(request: Request):
+        name = request.query_params.get('name')
         try:
             data = neo4j_query_helper.find(name)
-            return jsonify(status=200, message="Success", data=data), 200
+            return JSONResponse(status_code=200, content=data)
+        
         except requests.RequestException as e:
             print(f"Error making API request: {e}")
-            return jsonify(error="Internal Server Error"), 500
+            return JSONResponse(status_code=200, content=search_results)
+
         
 if __name__ == "__main__":
-   app.run(debug=True, port=port)
+#    app.run(debug=True, port=port)
+    uvicorn.run('app:app', host="localhost", port=port, reload=True)
