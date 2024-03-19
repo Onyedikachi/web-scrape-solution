@@ -158,8 +158,12 @@ def get_query_param():
 @app.route("/api/v1/search-results", methods=["GET"])
 def search_results():
         name = request.args.get('name')
-        data = neo4j_query_helper.find(name)
-        return jsonify(status=200, message="Success", data=data), 200
-
+        try:
+            data = neo4j_query_helper.find(name)
+            return jsonify(status=200, message="Success", data=data), 200
+        except requests.RequestException as e:
+            print(f"Error making API request: {e}")
+            return jsonify(error="Internal Server Error"), 500
+        
 if __name__ == "__main__":
    app.run(debug=True, port=port)
