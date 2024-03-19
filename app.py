@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from pathlib import Path
-from utils import scrape_helper
+from utils import scrape_helper, neo4j_query_helper
 
 import asyncio
 import requests
@@ -154,6 +154,12 @@ def get_query_param():
         print(f"Error: {str(e)}")
         return jsonify({'error': 'Internal server error.'}), 500
 
+
+@app.route("/api/v1/search-results", methods=["GET"])
+def search_results():
+        name = request.args.get('name')
+        data = neo4j_query_helper.find(name)
+        return jsonify(status=200, message="Success", data=data), 200
 
 if __name__ == "__main__":
    app.run(debug=True, port=port)
